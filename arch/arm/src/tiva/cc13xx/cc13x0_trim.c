@@ -160,11 +160,13 @@ void cc13x0_trim_device(void)
 
       TrimAfterColdResetWakeupFromShutDownWakeupFromPowerDown();
     }
+
   /* Check for shutdown When device is going to shutdown the hardware will
    * automatically clear the SLEEPDIS bit in the SLEEP register in the
    * AON_SYSCTL module. It is left for the application to assert this bit when
    * waking back up, but not before the desired IO configuration has been
-   * re-established. */
+   * re-established.
+   */
 
   else
     if (!
