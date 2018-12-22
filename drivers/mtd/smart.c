@@ -136,7 +136,6 @@
 #endif
 
 #define SMART_MAX_ALLOCS        10
-//#define CONFIG_MTD_SMART_PACK_COUNTS
 
 #ifndef CONFIG_MTD_SMART_ALLOC_DEBUG
 #define smart_malloc(d, b, n)   kmm_malloc(b)
