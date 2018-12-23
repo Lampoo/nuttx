@@ -103,7 +103,7 @@ void cc13x0_trim_device(void)
    * revision as revision = 0)
    */
 
-  fcfg1_revision = HWREG(FCFG1_BASE + FCFG1_O_FCFG1_REVISION);
+  fcfg1_revision = getreg32(TIVA_FCFG1_FCFG1_REVISION);
   if (fcfg1_revision == 0xffffffff)
     {
       fcfg1_revision = 0;
@@ -117,13 +117,13 @@ void cc13x0_trim_device(void)
 
   /* Enable standby in flash bank */
 
-  HWREGBITW(FLASH_BASE + FLASH_O_CFG, FLASH_CFG_DIS_STANDBY_BITN) = 0;
+  HWREGBITW(TIVA_FLASH_CFG, FLASH_CFG_DIS_STANDBY_BITN) = 0;
 
   /* Clock must always be enabled for the semaphore module (due to ADI/DDI HW
    * workaround)
    */
 
-  HWREG(AUX_WUC_BASE + AUX_WUC_O_MODCLKEN1) = AUX_WUC_MODCLKEN1_SMPH;
+  HWREG(TIVA_AON_WUC_MODCLKEN1) = AUX_WUC_MODCLKEN1_SMPH;
 
   /* Warm resets on CC13x0 and CC26x0 complicates software design because much
    * of our software expect that initialization is done from a full system
@@ -132,7 +132,7 @@ void cc13x0_trim_device(void)
    * Watchdog reset, the following is set here:
    */
 
-  HWREGBITW(PRCM_BASE + PRCM_O_WARMRESET, PRCM_WARMRESET_WR_TO_PINRESET_BITN) =
+  HWREGBITW(TIVA_PRCM_WARMRESET, PRCM_WARMRESET_WR_TO_PINRESET_BITN) =
     1;
 
   /* Select correct CACHE mode and set correct CACHE configuration */
@@ -151,7 +151,7 @@ void cc13x0_trim_device(void)
    * restarting.
    */
 
-  if (!(HWREGBITW(AON_IOC_BASE + AON_IOC_O_IOCLATCH, AON_IOC_IOCLATCH_EN_BITN)))
+  if (!(HWREGBITW(TIVA_AON_IOC_IOCLATCH, AON_IOC_IOCLATCH_EN_BITN)))
     {
       /* NB. This should be calling a ROM implementation of required trim and
        * compensation e.g.
@@ -171,7 +171,7 @@ void cc13x0_trim_device(void)
   else
     if (!
         (HWREGBITW
-         (AON_SYSCTL_BASE + AON_SYSCTL_O_SLEEPCTL,
+         (TIVA_AON_SYSCTL_SLEEPCTL,
           AON_SYSCTL_SLEEPCTL_IO_PAD_SLEEP_DIS_BITN)))
     {
       /* NB. This should be calling a ROM implementation of required trim and
@@ -201,13 +201,13 @@ void cc13x0_trim_device(void)
    * only powered when CPU power domain is powered
    */
 
-  HWREG(PRCM_BASE + PRCM_O_PDCTL1VIMS) = 0;
+  putreg32(0, TIVA_PRCM_PDCTL1VIMS);
 
   /* Configure optimal wait time for flash FSM in cases where flash pump wakes
    * up from sleep
    */
 
-  HWREG(FLASH_BASE + FLASH_O_FPAC1) = (HWREG(FLASH_BASE + FLASH_O_FPAC1) &
+  HWREG(TIVA_FLASH_FPAC1) = (getreg32(TIVA_FLASH_FPAC1) &
                                        ~FLASH_FPAC1_PSLEEPTDIS_M) |
     (0x139 << FLASH_FPAC1_PSLEEPTDIS_S);
 
@@ -216,18 +216,18 @@ void cc13x0_trim_device(void)
    * must be manually cleared
    */
 
-  if (((HWREG(AON_SYSCTL_BASE + AON_SYSCTL_O_RESETCTL) &
+  if (((getreg32(TIVA_AON_SYSCTL_RESETCTL) &
         (AON_SYSCTL_RESETCTL_BOOT_DET_1_M | AON_SYSCTL_RESETCTL_BOOT_DET_0_M))
        >> AON_SYSCTL_RESETCTL_BOOT_DET_0_S) == 1)
     {
-      aon_sysresetctrl = (HWREG(AON_SYSCTL_BASE + AON_SYSCTL_O_RESETCTL) &
+      aon_sysresetctrl = (getreg32(TIVA_AON_SYSCTL_RESETCTL) &
                             ~(AON_SYSCTL_RESETCTL_BOOT_DET_1_CLR_M |
                               AON_SYSCTL_RESETCTL_BOOT_DET_0_CLR_M |
                               AON_SYSCTL_RESETCTL_BOOT_DET_1_SET_M |
                               AON_SYSCTL_RESETCTL_BOOT_DET_0_SET_M));
-      HWREG(AON_SYSCTL_BASE + AON_SYSCTL_O_RESETCTL) =
+      HWREG(TIVA_AON_SYSCTL_RESETCTL) =
         aon_sysresetctrl | AON_SYSCTL_RESETCTL_BOOT_DET_1_SET_M;
-      HWREG(AON_SYSCTL_BASE + AON_SYSCTL_O_RESETCTL) = aon_sysresetctrl;
+      HWREG(TIVA_AON_SYSCTL_RESETCTL) = aon_sysresetctrl;
     }
 
   /* Make sure there are no ongoing VIMS mode change when leaving
@@ -235,7 +235,7 @@ void cc13x0_trim_device(void)
    * need to be sure)
    */
 
-  while (HWREGBITW(VIMS_BASE + VIMS_O_STAT, VIMS_STAT_MODE_CHANGING_BITN))
+  while (HWREGBITW(TIVA_VIMS_STAT, VIMS_STAT_MODE_CHANGING_BITN))
     {
       /* Do nothing - wait for an eventual ongoing mode change to complete. */
 
@@ -282,22 +282,22 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t fcfg1_revision)
    * reset to 0x0.
    */
 
-  HWREG(AON_WUC_BASE + AON_WUC_O_AUXCTL) = AON_WUC_AUXCTL_AUX_FORCE_ON;
+  HWREG(TIVA_AON_WUC_AUXCTL) = AON_WUC_AUXCTL_AUX_FORCE_ON;
 
   /* Wait for power on on the AUX domain */
 
   while (!
          (HWREGBITW
-          (AON_WUC_BASE + AON_WUC_O_PWRSTAT, AON_WUC_PWRSTAT_AUX_PD_ON_BITN)));
+          (TIVA_AON_WUC_PWRSTAT, AON_WUC_PWRSTAT_AUX_PD_ON_BITN)));
 
   /* Enable the clocks for AUX_DDI0_OSC and AUX_ADI4 */
 
-  HWREG(AUX_WUC_BASE + AUX_WUC_O_MODCLKEN0) = AUX_WUC_MODCLKEN0_AUX_DDI0_OSC |
+  HWREG(TIVA_AON_WUC_MODCLKEN0) = AUX_WUC_MODCLKEN0_AUX_DDI0_OSC |
     AUX_WUC_MODCLKEN0_AUX_ADI4;
 
   /* Check in CCFG for alternative DCDC setting */
 
-  if ((HWREG(CCFG_BASE + CCFG_O_SIZE_AND_DIS_FLAGS) &
+  if ((getreg32(TIVA_CCFG_SIZE_AND_DIS_FLAGS) &
        CCFG_SIZE_AND_DIS_FLAGS_DIS_ALT_DCDC_SETTING) == 0)
     {
       /* ADI_3_REFSYS:DCDCCTL5[3] (=DITHER_EN) = CCFG_MODE_CONF_1[19]
@@ -306,11 +306,8 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t fcfg1_revision)
        * write since layout is equal for both source and destination
        */
 
-      HWREGB(ADI3_BASE + ADI_O_MASK4B + (ADI_3_REFSYS_O_DCDCCTL5 * 2)) = (0xf0 |
-                                                                          (HWREG
-                                                                           (CCFG_BASE
-                                                                            +
-                                                                            CCFG_O_MODE_CONF_1)
+      HWREGB(TIVA_ADI3_MASK4B + (ADI_3_REFSYS_DCDCCTL5_OFFSET * 2)) = (0xf0 |
+                                                                          (getreg32(TIVA_CCFG_MODE_CONF_1)
                                                                            >>
                                                                            CCFG_MODE_CONF_1_ALT_DCDC_IPEAK_S));
 
@@ -322,7 +319,7 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t fcfg1_revision)
 
   /* read the MODE_CONF register in CCFG */
 
-  ccfg_ModeConfReg = HWREG(CCFG_BASE + CCFG_O_MODE_CONF);
+  ccfg_ModeConfReg = getreg32(TIVA_CCFG_MODE_CONF);
 
   /* First part of trim done after cold reset and wakeup from shutdown:
    * -Configure cc13x0 boost mode. -Adjust the VDDR_TRIM_SLEEP value.
@@ -351,11 +348,11 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t fcfg1_revision)
    */
 
   mp1rev =
-    ((HWREG(FCFG1_BASE + FCFG1_O_TRIM_CAL_REVISION) &
+    ((getreg32(TIVA_FCFG1_TRIM_CAL_REVISION) &
       FCFG1_TRIM_CAL_REVISION_MP1_M) >> FCFG1_TRIM_CAL_REVISION_MP1_S);
   if (mp1rev < 542)
     {
-      uint32_t ldoTrimReg = HWREG(FCFG1_BASE + FCFG1_O_BAT_RC_LDO_TRIM);
+      uint32_t ldoTrimReg = getreg32(TIVA_FCFG1_BAT_RC_LDO_TRIM);
       uint32_t vtrim_bod = ((ldoTrimReg & FCFG1_BAT_RC_LDO_TRIM_VTRIM_BOD_M) >> FCFG1_BAT_RC_LDO_TRIM_VTRIM_BOD_S);     /* bit[27:24]
                                                                                                                          * unsigned
                                                                                                                          */
@@ -383,7 +380,7 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t fcfg1_revision)
               vtrim_udig = ((vtrim_udig + 2) & 0xf);
             }
         }
-      HWREGB(ADI2_BASE + ADI_2_REFSYS_O_SOCLDOCTL0) =
+      HWREGB(TIVA_ADI2_SOCLDOCTL0) =
         (vtrim_udig << ADI_2_REFSYS_SOCLDOCTL0_VTRIM_UDIG_S) |
         (vtrim_bod << ADI_2_REFSYS_SOCLDOCTL0_VTRIM_BOD_S);
     }
@@ -406,11 +403,11 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t fcfg1_revision)
    * AUX_ADI4
    */
 
-  HWREG(AUX_WUC_BASE + AUX_WUC_O_MODCLKEN0) = AUX_WUC_MODCLKEN0_AUX_DDI0_OSC;
+  HWREG(TIVA_AON_WUC_MODCLKEN0) = AUX_WUC_MODCLKEN0_AUX_DDI0_OSC;
 
   /* Disable EFUSE clock */
 
-  HWREGBITW(FLASH_BASE + FLASH_O_CFG, FLASH_CFG_DIS_EFUSECLK_BITN) = 1;
+  HWREGBITW(TIVA_FLASH_CFG, FLASH_CFG_DIS_EFUSECLK_BITN) = 1;
 }
 
 /******************************************************************************

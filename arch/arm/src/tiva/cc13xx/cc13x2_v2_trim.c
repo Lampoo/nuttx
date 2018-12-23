@@ -47,7 +47,7 @@
 
 /* Temporarily adding these defines as they are missing in hw_adi_4_aux.h */
 
-#define ADI_4_AUX_O_LPMBIAS                                         0x0000000e
+#define ADI_4_AUX_LPMBIAS_OFFSET                                         0x0000000e
 #define ADI_4_AUX_LPMBIAS_LPM_TRIM_IOUT_M                           0x0000003f
 #define ADI_4_AUX_LPMBIAS_LPM_TRIM_IOUT_S                                    0
 #define ADI_4_AUX_COMP_LPM_BIAS_WIDTH_TRIM_M                        0x00000038
@@ -112,7 +112,7 @@ void cc13x2_cc26x2_trim_device(void)
    * revision as revision = 0)
    */
 
-  ui32Fcfg1Revision = HWREG(FCFG1_BASE + FCFG1_O_FCFG1_REVISION);
+  ui32Fcfg1Revision = getreg32(TIVA_FCFG1_FCFG1_REVISION);
   if (ui32Fcfg1Revision == 0xffffffff)
     {
       ui32Fcfg1Revision = 0;
@@ -126,7 +126,7 @@ void cc13x2_cc26x2_trim_device(void)
 
   /* Enable standby in flash bank */
 
-  HWREGBITW(FLASH_BASE + FLASH_O_CFG, FLASH_CFG_DIS_STANDBY_BITN) = 0;
+  HWREGBITW(TIVA_FLASH_CFG, FLASH_CFG_DIS_STANDBY_BITN) = 0;
 
   /* Select correct CACHE mode and set correct CACHE configuration */
 
@@ -144,7 +144,7 @@ void cc13x2_cc26x2_trim_device(void)
    * restarting.
    */
 
-  if (!(HWREGBITW(AON_IOC_BASE + AON_IOC_O_IOCLATCH, AON_IOC_IOCLATCH_EN_BITN)))
+  if (!(HWREGBITW(TIVA_AON_IOC_IOCLATCH, AON_IOC_IOCLATCH_EN_BITN)))
     {
       /* NB. This should be calling a ROM implementation of required trim and
        * compensation e.g.
@@ -163,7 +163,7 @@ void cc13x2_cc26x2_trim_device(void)
   else
     if (!
         (HWREGBITW
-         (AON_PMCTL_BASE + AON_PMCTL_O_SLEEPCTL,
+         (TIVA_AON_PMCTL_SLEEPCTL,
           AON_PMCTL_SLEEPCTL_IO_PAD_SLEEP_DIS_BITN)))
     {
       /* NB. This should be calling a ROM implementation of required trim and
@@ -193,13 +193,13 @@ void cc13x2_cc26x2_trim_device(void)
    * only powered when CPU power domain is powered
    */
 
-  HWREG(PRCM_BASE + PRCM_O_PDCTL1VIMS) = 0;
+  putreg32(0, TIVA_PRCM_PDCTL1VIMS);
 
   /* Configure optimal wait time for flash FSM in cases where flash pump wakes
    * up from sleep
    */
 
-  HWREG(FLASH_BASE + FLASH_O_FPAC1) = (HWREG(FLASH_BASE + FLASH_O_FPAC1) &
+  HWREG(TIVA_FLASH_FPAC1) = (getreg32(TIVA_FLASH_FPAC1) &
                                        ~FLASH_FPAC1_PSLEEPTDIS_M) |
     (0x139 << FLASH_FPAC1_PSLEEPTDIS_S);
 
@@ -208,19 +208,19 @@ void cc13x2_cc26x2_trim_device(void)
    * must be manually cleared
    */
 
-  if (((HWREG(AON_PMCTL_BASE + AON_PMCTL_O_RESETCTL) &
+  if (((getreg32(TIVA_AON_PMCTL_RESETCTL) &
         (AON_PMCTL_RESETCTL_BOOT_DET_1_M | AON_PMCTL_RESETCTL_BOOT_DET_0_M)) >>
        AON_PMCTL_RESETCTL_BOOT_DET_0_S) == 1)
     {
-      ui32AonSysResetctl = (HWREG(AON_PMCTL_BASE + AON_PMCTL_O_RESETCTL) &
+      ui32AonSysResetctl = (getreg32(TIVA_AON_PMCTL_RESETCTL) &
                             ~(AON_PMCTL_RESETCTL_BOOT_DET_1_CLR_M |
                               AON_PMCTL_RESETCTL_BOOT_DET_0_CLR_M |
                               AON_PMCTL_RESETCTL_BOOT_DET_1_SET_M |
                               AON_PMCTL_RESETCTL_BOOT_DET_0_SET_M |
                               AON_PMCTL_RESETCTL_MCU_WARM_RESET_M));
-      HWREG(AON_PMCTL_BASE + AON_PMCTL_O_RESETCTL) =
+      HWREG(TIVA_AON_PMCTL_RESETCTL) =
         ui32AonSysResetctl | AON_PMCTL_RESETCTL_BOOT_DET_1_SET_M;
-      HWREG(AON_PMCTL_BASE + AON_PMCTL_O_RESETCTL) = ui32AonSysResetctl;
+      HWREG(TIVA_AON_PMCTL_RESETCTL) = ui32AonSysResetctl;
     }
 
   /* Make sure there are no ongoing VIMS mode change when leaving
@@ -228,7 +228,7 @@ void cc13x2_cc26x2_trim_device(void)
    * but need to be sure)
    */
 
-  while (HWREGBITW(VIMS_BASE + VIMS_O_STAT, VIMS_STAT_MODE_CHANGING_BITN))
+  while (HWREGBITW(TIVA_VIMS_STAT, VIMS_STAT_MODE_CHANGING_BITN))
     {
       /* Do nothing - wait for an eventual ongoing mode change to complete. */
 
@@ -271,7 +271,7 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
 
   /* Check in CCFG for alternative DCDC setting */
 
-  if ((HWREG(CCFG_BASE + CCFG_O_SIZE_AND_DIS_FLAGS) &
+  if ((getreg32(TIVA_CCFG_SIZE_AND_DIS_FLAGS) &
        CCFG_SIZE_AND_DIS_FLAGS_DIS_ALT_DCDC_SETTING) == 0)
     {
       /* ADI_3_REFSYS:DCDCCTL5[3] (=DITHER_EN) = CCFG_MODE_CONF_1[19]
@@ -280,11 +280,8 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
        * write since layout is equal for both source and destination
        */
 
-      HWREGB(ADI3_BASE + ADI_O_MASK4B + (ADI_3_REFSYS_O_DCDCCTL5 * 2)) = (0xf0 |
-                                                                          (HWREG
-                                                                           (CCFG_BASE
-                                                                            +
-                                                                            CCFG_O_MODE_CONF_1)
+      HWREGB(TIVA_ADI3_MASK4B + (ADI_3_REFSYS_DCDCCTL5_OFFSET * 2)) = (0xf0 |
+                                                                          (getreg32(TIVA_CCFG_MODE_CONF_1)
                                                                            >>
                                                                            CCFG_MODE_CONF_1_ALT_DCDC_IPEAK_S));
 
@@ -299,16 +296,16 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
    * OSCHfSourceSwitch().
    */
 
-  HWREG(AUX_DDI0_OSC_BASE + DDI_O_MASK16B + (DDI_0_OSC_O_CTL0 << 1) + 4) =
+  HWREG(TIVA_AUX_DDI0_OSCMASK16B + (DDI_0_OSC_CTL0_OFFSET << 1) + 4) =
     DDI_0_OSC_CTL0_CLK_DCDC_SRC_SEL_M | (DDI_0_OSC_CTL0_CLK_DCDC_SRC_SEL_M >>
                                          16);
   /* Dummy read to ensure that the write has propagated */
 
-  HWREGH(AUX_DDI0_OSC_BASE + DDI_0_OSC_O_CTL0);
+  HWREGH(TIVA_AUX_DDI0_OSCCTL0);
 
   /* read the MODE_CONF register in CCFG */
 
-  ccfg_ModeConfReg = HWREG(CCFG_BASE + CCFG_O_MODE_CONF);
+  ccfg_ModeConfReg = getreg32(TIVA_CCFG_MODE_CONF);
 
   /* First part of trim done after cold reset and wakeup from shutdown: -Adjust
    * the VDDR_TRIM_SLEEP value. -Configure DCDC.
@@ -334,10 +331,10 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
 
         /*--- Propagate the LPM_BIAS trim --- */
 
-    trimReg = HWREG(FCFG1_BASE + FCFG1_O_DAC_BIAS_CNF);
+    trimReg = getreg32(TIVA_FCFG1_DAC_BIAS_CNF);
     ui32TrimValue = ((trimReg & FCFG1_DAC_BIAS_CNF_LPM_TRIM_IOUT_M) >>
                      FCFG1_DAC_BIAS_CNF_LPM_TRIM_IOUT_S);
-    HWREGB(AUX_ADI4_BASE + ADI_4_AUX_O_LPMBIAS) =
+    HWREGB(TIVA_AUX_ADI4_LPMBIAS) =
       ((ui32TrimValue << ADI_4_AUX_LPMBIAS_LPM_TRIM_IOUT_S) &
        ADI_4_AUX_LPMBIAS_LPM_TRIM_IOUT_M);
 
@@ -345,12 +342,12 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
 
     if (trimReg & FCFG1_DAC_BIAS_CNF_LPM_BIAS_BACKUP_EN)
       {
-        HWREGB(ADI3_BASE + ADI_O_SET + ADI_3_REFSYS_O_AUX_DEBUG) =
+        HWREGB(TIVA_ADI3_SET + ADI_3_REFSYS_AUX_DEBUG_OFFSET) =
           ADI_3_REFSYS_AUX_DEBUG_LPM_BIAS_BACKUP_EN;
       }
     else
       {
-        HWREGB(ADI3_BASE + ADI_O_CLR + ADI_3_REFSYS_O_AUX_DEBUG) =
+        HWREGB(TIVA_ADI3_CLR + ADI_3_REFSYS_AUX_DEBUG_OFFSET) =
           ADI_3_REFSYS_AUX_DEBUG_LPM_BIAS_BACKUP_EN;
       }
 
@@ -360,7 +357,7 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
       uint32_t widthTrim =
         ((trimReg & FCFG1_DAC_BIAS_CNF_LPM_BIAS_WIDTH_TRIM_M) >>
          FCFG1_DAC_BIAS_CNF_LPM_BIAS_WIDTH_TRIM_S);
-      HWREGH(AUX_ADI4_BASE + ADI_O_MASK8B + (ADI_4_AUX_O_COMP * 2)) =   /* Set
+      HWREGH(TIVA_AUX_ADI4_MASK8B + (ADI_4_AUX_COMP_OFFSET * 2)) =   /* Set
                                                                          * LPM_BIAS_WIDTH_TRIM
                                                                          * = 3 */
         ((ADI_4_AUX_COMP_LPM_BIAS_WIDTH_TRIM_M << 8) |  /* Set mask (bits to be
@@ -389,7 +386,7 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
 
   /* Disable EFUSE clock */
 
-  HWREGBITW(FLASH_BASE + FLASH_O_CFG, FLASH_CFG_DIS_EFUSECLK_BITN) = 1;
+  HWREGBITW(TIVA_FLASH_CFG, FLASH_CFG_DIS_EFUSECLK_BITN) = 1;
 }
 
 /******************************************************************************

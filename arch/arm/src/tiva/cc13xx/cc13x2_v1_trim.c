@@ -47,7 +47,7 @@
 
 /* Temporarily adding these defines as they are missing in hw_adi_4_aux.h */
 
-#define ADI_4_AUX_O_LPMBIAS                                         0x0000000e
+#define ADI_4_AUX_LPMBIAS_OFFSET                                         0x0000000e
 #define ADI_4_AUX_LPMBIAS_LPM_TRIM_IOUT_M                           0x0000003f
 #define ADI_4_AUX_LPMBIAS_LPM_TRIM_IOUT_S                                    0
 #define ADI_4_AUX_COMP_LPM_BIAS_WIDTH_TRIM_M                        0x00000038
@@ -124,7 +124,7 @@ void cc13x2_cc26x2_trim_device(void)
    * revision as revision = 0)
    */
 
-  ui32Fcfg1Revision = HWREG(FCFG1_BASE + FCFG1_O_FCFG1_REVISION);
+  ui32Fcfg1Revision = getreg32(TIVA_FCFG1_FCFG1_REVISION);
   if (ui32Fcfg1Revision == 0xffffffff)
     {
       ui32Fcfg1Revision = 0;
@@ -138,7 +138,7 @@ void cc13x2_cc26x2_trim_device(void)
 
   /* Enable standby in flash bank */
 
-  HWREGBITW(FLASH_BASE + FLASH_O_CFG, FLASH_CFG_DIS_STANDBY_BITN) = 0;
+  HWREGBITW(TIVA_FLASH_CFG, FLASH_CFG_DIS_STANDBY_BITN) = 0;
 
   /* Select correct CACHE mode and set correct CACHE configuration */
 
@@ -156,7 +156,7 @@ void cc13x2_cc26x2_trim_device(void)
    * restarting.
    */
 
-  if (!(HWREGBITW(AON_IOC_BASE + AON_IOC_O_IOCLATCH, AON_IOC_IOCLATCH_EN_BITN)))
+  if (!(HWREGBITW(TIVA_AON_IOC_IOCLATCH, AON_IOC_IOCLATCH_EN_BITN)))
     {
       /* NB. This should be calling a ROM implementation of required trim and
        * compensation e.g.
@@ -175,8 +175,7 @@ void cc13x2_cc26x2_trim_device(void)
 
   else
     if (!
-        (HWREGBITW
-         (AON_PMCTL_BASE + AON_PMCTL_O_SLEEPCTL,
+        (HWREGBITW(TIVA_AON_PMCTL_SLEEPCTL,
           AON_PMCTL_SLEEPCTL_IO_PAD_SLEEP_DIS_BITN)))
     {
       /* NB. This should be calling a ROM implementation of required trim and
@@ -206,13 +205,13 @@ void cc13x2_cc26x2_trim_device(void)
    * only powered when CPU power domain is powered
    */
 
-  HWREG(PRCM_BASE + PRCM_O_PDCTL1VIMS) = 0;
+  putreg32(0, TIVA_PRCM_PDCTL1VIMS);
 
   /* Configure optimal wait time for flash FSM in cases where flash pump wakes
    * up from sleep
    */
 
-  HWREG(FLASH_BASE + FLASH_O_FPAC1) = (HWREG(FLASH_BASE + FLASH_O_FPAC1) &
+  HWREG(TIVA_FLASH_FPAC1) = (getreg32(TIVA_FLASH_FPAC1) &
                                        ~FLASH_FPAC1_PSLEEPTDIS_M) |
     (0x139 << FLASH_FPAC1_PSLEEPTDIS_S);
 
@@ -221,19 +220,19 @@ void cc13x2_cc26x2_trim_device(void)
    * must be manually cleared
    */
 
-  if (((HWREG(AON_PMCTL_BASE + AON_PMCTL_O_RESETCTL) &
+  if (((getreg32(TIVA_AON_PMCTL_RESETCTL) &
         (AON_PMCTL_RESETCTL_BOOT_DET_1_M | AON_PMCTL_RESETCTL_BOOT_DET_0_M)) >>
        AON_PMCTL_RESETCTL_BOOT_DET_0_S) == 1)
     {
-      ui32AonSysResetctl = (HWREG(AON_PMCTL_BASE + AON_PMCTL_O_RESETCTL) &
+      ui32AonSysResetctl = (getreg32(TIVA_AON_PMCTL_RESETCTL) &
                             ~(AON_PMCTL_RESETCTL_BOOT_DET_1_CLR_M |
                               AON_PMCTL_RESETCTL_BOOT_DET_0_CLR_M |
                               AON_PMCTL_RESETCTL_BOOT_DET_1_SET_M |
                               AON_PMCTL_RESETCTL_BOOT_DET_0_SET_M |
                               AON_PMCTL_RESETCTL_MCU_WARM_RESET_M));
-      HWREG(AON_PMCTL_BASE + AON_PMCTL_O_RESETCTL) =
+      HWREG(TIVA_AON_PMCTL_RESETCTL) =
         ui32AonSysResetctl | AON_PMCTL_RESETCTL_BOOT_DET_1_SET_M;
-      HWREG(AON_PMCTL_BASE + AON_PMCTL_O_RESETCTL) = ui32AonSysResetctl;
+      HWREG(TIVA_AON_PMCTL_RESETCTL) = ui32AonSysResetctl;
     }
 
   /* Make sure there are no ongoing VIMS mode change when leaving
@@ -241,7 +240,7 @@ void cc13x2_cc26x2_trim_device(void)
    * but need to be sure)
    */
 
-  while (HWREGBITW(VIMS_BASE + VIMS_O_STAT, VIMS_STAT_MODE_CHANGING_BITN))
+  while (HWREGBITW(TIVA_VIMS_STAT, VIMS_STAT_MODE_CHANGING_BITN))
     {
       /* Do nothing - wait for an eventual ongoing mode change to complete. */
 
@@ -272,14 +271,14 @@ static void Step_RCOSCHF_CTRIM(uint32_t toCode)
   uint32_t currentRcoscHfCtlReg;
   uint32_t currentTrim;
 
-  currentRcoscHfCtlReg = HWREGH(AUX_DDI0_OSC_BASE + DDI_0_OSC_O_RCOSCHFCTL);
+  currentRcoscHfCtlReg = HWREGH(TIVA_AUX_DDI0_OSCRCOSCHFCTL);
   currentTrim =
     (((currentRcoscHfCtlReg & DDI_0_OSC_RCOSCHFCTL_RCOSCHF_CTRIM_M) >>
       DDI_0_OSC_RCOSCHFCTL_RCOSCHF_CTRIM_S) ^ 0xc0);
 
   while (toCode != currentTrim)
     {
-      HWREG(AON_RTC_BASE + AON_RTC_O_SYNCLF);   /* Wait for next edge on
+      HWREG(TIVA_AON_RTC_SYNCLF);   /* Wait for next edge on
                                                  * SCLK_LF (positive or
                                                  * negative) */
 
@@ -288,7 +287,7 @@ static void Step_RCOSCHF_CTRIM(uint32_t toCode)
       else
         currentTrim--;
 
-      HWREGH(AUX_DDI0_OSC_BASE + DDI_0_OSC_O_RCOSCHFCTL) =
+      HWREGH(TIVA_AUX_DDI0_OSCRCOSCHFCTL) =
         (currentRcoscHfCtlReg & ~DDI_0_OSC_RCOSCHFCTL_RCOSCHF_CTRIM_M) |
         ((currentTrim ^ 0xc0) << DDI_0_OSC_RCOSCHFCTL_RCOSCHF_CTRIM_S);
     }
@@ -303,7 +302,7 @@ static void Step_VBG(int32_t targetSigned)
 
   do
     {
-      refSysCtl3Reg = HWREGB(ADI3_BASE + ADI_3_REFSYS_O_REFSYSCTL3);
+      refSysCtl3Reg = HWREGB(TIVA_ADI3_REFSYS_REFSYSCTL3);
       currentSigned =
         (((int32_t)
           (refSysCtl3Reg <<
@@ -311,7 +310,7 @@ static void Step_VBG(int32_t targetSigned)
             ADI_3_REFSYS_REFSYSCTL3_TRIM_VBG_S))) >> (32 -
                                                       ADI_3_REFSYS_REFSYSCTL3_TRIM_VBG_W));
 
-      HWREG(AON_RTC_BASE + AON_RTC_O_SYNCLF);   /* Wait for next edge on
+      HWREG(TIVA_AON_RTC_SYNCLF);   /* Wait for next edge on
                                                  * SCLK_LF (positive or
                                                  * negative) */
 
@@ -322,7 +321,7 @@ static void Step_VBG(int32_t targetSigned)
           else
             currentSigned--;
 
-          HWREGB(ADI3_BASE + ADI_3_REFSYS_O_REFSYSCTL3) =
+          HWREGB(TIVA_ADI3_REFSYS_REFSYSCTL3) =
             (refSysCtl3Reg &
              ~(ADI_3_REFSYS_REFSYSCTL3_BOD_BG_TRIM_EN |
                ADI_3_REFSYS_REFSYSCTL3_TRIM_VBG_M)) | ((((uint32_t)
@@ -331,7 +330,7 @@ static void Step_VBG(int32_t targetSigned)
                                                        &
                                                        ADI_3_REFSYS_REFSYSCTL3_TRIM_VBG_M);
 
-          HWREGB(ADI3_BASE + ADI_3_REFSYS_O_REFSYSCTL3) |= ADI_3_REFSYS_REFSYSCTL3_BOD_BG_TRIM_EN;      /* Bit
+          HWREGB(TIVA_ADI3_REFSYS_REFSYSCTL3) |= ADI_3_REFSYS_REFSYSCTL3_BOD_BG_TRIM_EN;      /* Bit
                                                                                                          * set
                                                                                                          * by
                                                                                                          * doing
@@ -365,7 +364,7 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
 
   /* Check in CCFG for alternative DCDC setting */
 
-  if ((HWREG(CCFG_BASE + CCFG_O_SIZE_AND_DIS_FLAGS) &
+  if ((getreg32(TIVA_CCFG_SIZE_AND_DIS_FLAGS) &
        CCFG_SIZE_AND_DIS_FLAGS_DIS_ALT_DCDC_SETTING) == 0)
     {
       /* ADI_3_REFSYS:DCDCCTL5[3] (=DITHER_EN) = CCFG_MODE_CONF_1[19]
@@ -374,11 +373,8 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
        * write since layout is equal for both source and destination
        */
 
-      HWREGB(ADI3_BASE + ADI_O_MASK4B + (ADI_3_REFSYS_O_DCDCCTL5 * 2)) = (0xf0 |
-                                                                          (HWREG
-                                                                           (CCFG_BASE
-                                                                            +
-                                                                            CCFG_O_MODE_CONF_1)
+      HWREGB(TIVA_ADI3_MASK4B + (ADI_3_REFSYS_DCDCCTL5_OFFSET * 2)) = (0xf0 |
+                                                                          (getreg32(TIVA_CCFG_MODE_CONF_1)
                                                                            >>
                                                                            CCFG_MODE_CONF_1_ALT_DCDC_IPEAK_S));
 
@@ -393,16 +389,16 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
    * OSCHfSourceSwitch().
    */
 
-  HWREG(AUX_DDI0_OSC_BASE + DDI_O_MASK16B + (DDI_0_OSC_O_CTL0 << 1) + 4) =
+  HWREG(TIVA_AUX_DDI0_OSCMASK16B + (DDI_0_OSC_CTL0_OFFSET << 1) + 4) =
     DDI_0_OSC_CTL0_CLK_DCDC_SRC_SEL_M | (DDI_0_OSC_CTL0_CLK_DCDC_SRC_SEL_M >>
                                          16);
   /* Dummy read to ensure that the write has propagated */
 
-  HWREGH(AUX_DDI0_OSC_BASE + DDI_0_OSC_O_CTL0);
+  HWREGH(TIVA_AUX_DDI0_OSCCTL0);
 
   /* read the MODE_CONF register in CCFG */
 
-  ccfg_ModeConfReg = HWREG(CCFG_BASE + CCFG_O_MODE_CONF);
+  ccfg_ModeConfReg = getreg32(TIVA_CCFG_MODE_CONF);
 
   /* First part of trim done after cold reset and wakeup from shutdown: -Adjust
    * the VDDR_TRIM_SLEEP value. -Configure DCDC.
@@ -432,7 +428,7 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
      * OSC_BIAS_LDO_TRIM
      */
 
-    ui32EfuseData = HWREG(FCFG1_BASE + FCFG1_O_SHDW_OSC_BIAS_LDO_TRIM);
+    ui32EfuseData = getreg32(TIVA_FCFG1_SHDW_OSC_BIAS_LDO_TRIM);
 
     Step_RCOSCHF_CTRIM((ui32EfuseData &
                         FCFG1_SHDW_OSC_BIAS_LDO_TRIM_RCOSCHF_CTRIM_M) >>
@@ -443,7 +439,7 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
      * since all register bit fields are trimmed.
      */
 
-    HWREGB(ADI2_BASE + ADI_O_DIR + ADI_2_REFSYS_O_SOCLDOCTL1) =
+    HWREGB(TIVA_ADI2_DIR + ADI_2_REFSYS_SOCLDOCTL1_OFFSET) =
       ((((ui32EfuseData & FCFG1_SHDW_OSC_BIAS_LDO_TRIM_VTRIM_COARSE_M) >>
          FCFG1_SHDW_OSC_BIAS_LDO_TRIM_VTRIM_COARSE_S) <<
         ADI_2_REFSYS_SOCLDOCTL1_VTRIM_COARSE_S) |
@@ -457,7 +453,7 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
      * bit field in this register.
      */
 
-    HWREGB(ADI2_BASE + ADI_O_DIR + ADI_2_REFSYS_O_REFSYSCTL0) =
+    HWREGB(TIVA_ADI2_DIR + ADI_2_REFSYS_REFSYSCTL0_OFFSET) =
       (((ui32EfuseData & FCFG1_SHDW_OSC_BIAS_LDO_TRIM_TRIMIREF_M) >>
         FCFG1_SHDW_OSC_BIAS_LDO_TRIM_TRIMIREF_S) <<
        ADI_2_REFSYS_REFSYSCTL0_TRIM_IREF_S);
@@ -466,7 +462,7 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
      * ADI_3_REFSYS
      */
 
-    HWREGH(ADI3_BASE + ADI_O_MASK8B + (ADI_3_REFSYS_O_REFSYSCTL2 << 1)) =
+    HWREGH(TIVA_ADI3_MASK8B + (ADI_3_REFSYS_REFSYSCTL2_OFFSET << 1)) =
       (ADI_3_REFSYS_REFSYSCTL2_TRIM_VREF_M << 8) |
       (((ui32EfuseData & FCFG1_SHDW_OSC_BIAS_LDO_TRIM_TRIMMAG_M) >>
         FCFG1_SHDW_OSC_BIAS_LDO_TRIM_TRIMMAG_S) <<
@@ -476,16 +472,16 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
      * FCFG1
      */
 
-    ui32EfuseData = HWREG(FCFG1_BASE + FCFG1_O_SHDW_ANA_TRIM);
+    ui32EfuseData = getreg32(TIVA_FCFG1_SHDW_ANA_TRIM);
 
     orgResetCtl =
-      (HWREG(AON_PMCTL_BASE + AON_PMCTL_O_RESETCTL) &
+      (getreg32(TIVA_AON_PMCTL_RESETCTL) &
        ~AON_PMCTL_RESETCTL_MCU_WARM_RESET_M);
-    HWREG(AON_PMCTL_BASE + AON_PMCTL_O_RESETCTL) =
+    HWREG(TIVA_AON_PMCTL_RESETCTL) =
       (orgResetCtl &
        ~(AON_PMCTL_RESETCTL_CLK_LOSS_EN | AON_PMCTL_RESETCTL_VDD_LOSS_EN |
          AON_PMCTL_RESETCTL_VDDR_LOSS_EN | AON_PMCTL_RESETCTL_VDDS_LOSS_EN));
-    HWREG(AON_RTC_BASE + AON_RTC_O_SYNC);       /* Wait for xxx_LOSS_EN setting
+    HWREG(TIVA_AON_RTC_SYNC);       /* Wait for xxx_LOSS_EN setting
                                                  * to propagate */
 
     /* The VDDS_BOD trim and the VDDR trim is already stepped up to max/HH if
@@ -496,15 +492,15 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
     if (((ccfg_ModeConfReg & CCFG_MODE_CONF_VDDR_EXT_LOAD) != 0) ||
         ((ccfg_ModeConfReg & CCFG_MODE_CONF_VDDS_BOD_LEVEL) == 0))
       {
-        if (HWREG(AON_PMCTL_BASE + AON_PMCTL_O_PWRCTL) &
+        if (getreg32(TIVA_AON_PMCTL_PWRCTL) &
             AON_PMCTL_PWRCTL_EXT_REG_MODE)
           {
             /* Apply VDDS BOD trim value Write to register CTLSOCREFSYS1 (addr
              * offset 3) bit[7:3] (TRIMBOD) in ADI_3_REFSYS
              */
 
-            HWREGH(ADI3_BASE + ADI_O_MASK8B +
-                   (ADI_3_REFSYS_O_REFSYSCTL1 << 1)) =
+            HWREGH(TIVA_ADI3_MASK8B +
+                   (ADI_3_REFSYS_REFSYSCTL1_OFFSET << 1)) =
               (ADI_3_REFSYS_REFSYSCTL1_TRIM_VDDS_BOD_M << 8) |
               (((ui32EfuseData & FCFG1_SHDW_ANA_TRIM_TRIMBOD_EXTMODE_M) >>
                 FCFG1_SHDW_ANA_TRIM_TRIMBOD_EXTMODE_S) <<
@@ -516,8 +512,8 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
              * offset 3) bit[7:3] (TRIMBOD) in ADI_3_REFSYS
              */
 
-            HWREGH(ADI3_BASE + ADI_O_MASK8B +
-                   (ADI_3_REFSYS_O_REFSYSCTL1 << 1)) =
+            HWREGH(TIVA_ADI3_MASK8B +
+                   (ADI_3_REFSYS_REFSYSCTL1_OFFSET << 1)) =
               (ADI_3_REFSYS_REFSYSCTL1_TRIM_VDDS_BOD_M << 8) |
               (((ui32EfuseData & FCFG1_SHDW_ANA_TRIM_TRIMBOD_INTMODE_M) >>
                 FCFG1_SHDW_ANA_TRIM_TRIMBOD_INTMODE_S) <<
@@ -526,7 +522,7 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
 
         /* Load the new VDDS_BOD setting */
 
-        HWREGB(ADI3_BASE + ADI_3_REFSYS_O_REFSYSCTL3) &= ~ADI_3_REFSYS_REFSYSCTL3_BOD_BG_TRIM_EN;       /* Bit
+        HWREGB(TIVA_ADI3_REFSYS_REFSYSCTL3) &= ~ADI_3_REFSYS_REFSYSCTL3_BOD_BG_TRIM_EN;       /* Bit
                                                                                                          * clear
                                                                                                          * by
                                                                                                          * doing
@@ -536,7 +532,7 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
                                                                                                          * write
                                                                                                          */
 
-        HWREGB(ADI3_BASE + ADI_3_REFSYS_O_REFSYSCTL3) |= ADI_3_REFSYS_REFSYSCTL3_BOD_BG_TRIM_EN;        /* Bit
+        HWREGB(TIVA_ADI3_REFSYS_REFSYSCTL3) |= ADI_3_REFSYS_REFSYSCTL3_BOD_BG_TRIM_EN;        /* Bit
                                                                                                          * set
                                                                                                          * by
                                                                                                          * doing
@@ -561,16 +557,16 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
 
     /* Wait two more LF edges before restoring xxx_LOSS_EN settings */
 
-    HWREG(AON_RTC_BASE + AON_RTC_O_SYNCLF);     /* Wait for next edge on
+    HWREG(TIVA_AON_RTC_SYNCLF);     /* Wait for next edge on
                                                  * SCLK_LF (positive or
                                                  * negative) */
 
-    HWREG(AON_RTC_BASE + AON_RTC_O_SYNCLF);     /* Wait for next edge on
+    HWREG(TIVA_AON_RTC_SYNCLF);     /* Wait for next edge on
                                                  * SCLK_LF (positive or
                                                  * negative) */
 
-    HWREG(AON_PMCTL_BASE + AON_PMCTL_O_RESETCTL) = orgResetCtl;
-    HWREG(AON_RTC_BASE + AON_RTC_O_SYNC);       /* Wait for xxx_LOSS_EN setting
+    HWREG(TIVA_AON_PMCTL_RESETCTL) = orgResetCtl;
+    HWREG(TIVA_AON_RTC_SYNC);       /* Wait for xxx_LOSS_EN setting
                                                  * to propagate */
 
   }
@@ -581,18 +577,18 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
 
         /*--- Propagate the LPM_BIAS trim --- */
 
-    trimReg = HWREG(FCFG1_BASE + FCFG1_O_DAC_BIAS_CNF);
+    trimReg = getreg32(TIVA_FCFG1_DAC_BIAS_CNF);
     ui32TrimValue = ((trimReg & FCFG1_DAC_BIAS_CNF_LPM_TRIM_IOUT_M) >>
                      FCFG1_DAC_BIAS_CNF_LPM_TRIM_IOUT_S);
-    HWREGB(AUX_ADI4_BASE + ADI_4_AUX_O_LPMBIAS) =
+    HWREGB(TIVA_AUX_ADI4_LPMBIAS) =
       ((ui32TrimValue << ADI_4_AUX_LPMBIAS_LPM_TRIM_IOUT_S) &
        ADI_4_AUX_LPMBIAS_LPM_TRIM_IOUT_M);
 
         /*--- Set fixed LPM_BIAS values --- LPM_BIAS_BACKUP_EN = 1 and LPM_BIAS_WIDTH_TRIM = 3 */
 
-    HWREGB(ADI3_BASE + ADI_O_SET + ADI_3_REFSYS_O_AUX_DEBUG) =
+    HWREGB(TIVA_ADI3_SET + ADI_3_REFSYS_AUX_DEBUG_OFFSET) =
       ADI_3_REFSYS_AUX_DEBUG_LPM_BIAS_BACKUP_EN;
-    HWREGH(AUX_ADI4_BASE + ADI_O_MASK8B + (ADI_4_AUX_O_COMP * 2)) =     /* Set
+    HWREGH(TIVA_AUX_ADI4_MASK8B + (ADI_4_AUX_COMP_OFFSET * 2)) =     /* Set
                                                                          * LPM_BIAS_WIDTH_TRIM
                                                                          * = 3 */
       ((ADI_4_AUX_COMP_LPM_BIAS_WIDTH_TRIM_M << 8) |    /* Set mask (bits to be
@@ -619,7 +615,7 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
 
   /* Disable EFUSE clock */
 
-  HWREGBITW(FLASH_BASE + FLASH_O_CFG, FLASH_CFG_DIS_EFUSECLK_BITN) = 1;
+  HWREGBITW(TIVA_FLASH_CFG, FLASH_CFG_DIS_EFUSECLK_BITN) = 1;
 }
 
 /******************************************************************************
