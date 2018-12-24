@@ -208,8 +208,8 @@ void cc13x0_trim_device(void)
    */
 
   HWREG(TIVA_FLASH_FPAC1) = (getreg32(TIVA_FLASH_FPAC1) &
-                                       ~FLASH_FPAC1_PSLEEPTDIS_M) |
-    (0x139 << FLASH_FPAC1_PSLEEPTDIS_S);
+                                       ~FLASH_FPAC1_PSLEEPTDIS_MASK) |
+    (0x139 << FLASH_FPAC1_PSLEEPTDIS_SHIFT);
 
   /* And finally at the end of the flash boot process: SET BOOT_DET bits in
    * AON_SYSCTL to 3 if already found to be 1 Note: The BOOT_DET_x_CLR/SET bits
@@ -217,16 +217,16 @@ void cc13x0_trim_device(void)
    */
 
   if (((getreg32(TIVA_AON_SYSCTL_RESETCTL) &
-        (AON_SYSCTL_RESETCTL_BOOT_DET_1_M | AON_SYSCTL_RESETCTL_BOOT_DET_0_M))
-       >> AON_SYSCTL_RESETCTL_BOOT_DET_0_S) == 1)
+        (AON_SYSCTL_RESETCTL_BOOT_DET_1_MASK | AON_SYSCTL_RESETCTL_BOOT_DET_0_MASK))
+       >> AON_SYSCTL_RESETCTL_BOOT_DET_0_SHIFT) == 1)
     {
       aon_sysresetctrl = (getreg32(TIVA_AON_SYSCTL_RESETCTL) &
-                            ~(AON_SYSCTL_RESETCTL_BOOT_DET_1_CLR_M |
-                              AON_SYSCTL_RESETCTL_BOOT_DET_0_CLR_M |
-                              AON_SYSCTL_RESETCTL_BOOT_DET_1_SET_M |
-                              AON_SYSCTL_RESETCTL_BOOT_DET_0_SET_M));
+                            ~(AON_SYSCTL_RESETCTL_BOOT_DET_1_CLR_MASK |
+                              AON_SYSCTL_RESETCTL_BOOT_DET_0_CLR_MASK |
+                              AON_SYSCTL_RESETCTL_BOOT_DET_1_SET_MASK |
+                              AON_SYSCTL_RESETCTL_BOOT_DET_0_SET_MASK));
       HWREG(TIVA_AON_SYSCTL_RESETCTL) =
-        aon_sysresetctrl | AON_SYSCTL_RESETCTL_BOOT_DET_1_SET_M;
+        aon_sysresetctrl | AON_SYSCTL_RESETCTL_BOOT_DET_1_SET_MASK;
       HWREG(TIVA_AON_SYSCTL_RESETCTL) = aon_sysresetctrl;
     }
 
@@ -309,7 +309,7 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t fcfg1_revision)
       HWREGB(TIVA_ADI3_MASK4B + (ADI_3_REFSYS_DCDCCTL5_OFFSET * 2)) = (0xf0 |
                                                                           (getreg32(TIVA_CCFG_MODE_CONF_1)
                                                                            >>
-                                                                           CCFG_MODE_CONF_1_ALT_DCDC_IPEAK_S));
+                                                                           CCFG_MODE_CONF_1_ALT_DCDC_IPEAK_SHIFT));
 
     }
 
@@ -349,15 +349,15 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t fcfg1_revision)
 
   mp1rev =
     ((getreg32(TIVA_FCFG1_TRIM_CAL_REVISION) &
-      FCFG1_TRIM_CAL_REVISION_MP1_M) >> FCFG1_TRIM_CAL_REVISION_MP1_S);
+      FCFG1_TRIM_CAL_REVISION_MP1_M) >> FCFG1_TRIM_CAL_REVISION_MP1_SHIFT);
   if (mp1rev < 542)
     {
       uint32_t ldoTrimReg = getreg32(TIVA_FCFG1_BAT_RC_LDO_TRIM);
-      uint32_t vtrim_bod = ((ldoTrimReg & FCFG1_BAT_RC_LDO_TRIM_VTRIM_BOD_M) >> FCFG1_BAT_RC_LDO_TRIM_VTRIM_BOD_S);     /* bit[27:24]
+      uint32_t vtrim_bod = ((ldoTrimReg & FCFG1_BAT_RC_LDO_TRIM_VTRIM_BOD_M) >> FCFG1_BAT_RC_LDO_TRIM_VTRIM_BOD_SHIFT);     /* bit[27:24]
                                                                                                                          * unsigned
                                                                                                                          */
 
-      uint32_t vtrim_udig = ((ldoTrimReg & FCFG1_BAT_RC_LDO_TRIM_VTRIM_UDIG_M) >> FCFG1_BAT_RC_LDO_TRIM_VTRIM_UDIG_S);  /* bit[19:16]
+      uint32_t vtrim_udig = ((ldoTrimReg & FCFG1_BAT_RC_LDO_TRIM_VTRIM_UDIG_M) >> FCFG1_BAT_RC_LDO_TRIM_VTRIM_UDIG_SHIFT);  /* bit[19:16]
                                                                                                                          * signed
                                                                                                                          * but
                                                                                                                          * treated
@@ -381,8 +381,8 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t fcfg1_revision)
             }
         }
       HWREGB(TIVA_ADI2_SOCLDOCTL0) =
-        (vtrim_udig << ADI_2_REFSYS_SOCLDOCTL0_VTRIM_UDIG_S) |
-        (vtrim_bod << ADI_2_REFSYS_SOCLDOCTL0_VTRIM_BOD_S);
+        (vtrim_udig << ADI_2_REFSYS_SOCLDOCTL0_VTRIM_UDIG_SHIFT) |
+        (vtrim_bod << ADI_2_REFSYS_SOCLDOCTL0_VTRIM_BOD_SHIFT);
     }
 
   /* Third part of trim done after cold reset and wakeup from shutdown:
