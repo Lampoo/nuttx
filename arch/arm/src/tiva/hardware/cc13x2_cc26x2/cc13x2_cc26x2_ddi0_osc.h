@@ -258,7 +258,7 @@
 #define DDI0_OSC_ATESTCTL_ATEST_RCOSCMF_SHIFT       (12)      /* Bits 12-13 ATEST control for RCOSC_MF */
 #define DDI0_OSC_ATESTCTL_ATEST_RCOSCMF_MASK        (3 << DDI0_OSC_ATESTCTL_ATEST_RCOSCMF_SHIFT)
 #  define DDI0_OSC_ATESTCTL_ATEST_RCOSCMF_DISABLE   (0 << DDI0_OSC_ATESTCTL_ATEST_RCOSCMF_SHIFT) /* ATEST disabled */
-#  define DDI0_OSC_ATESTCTL_ATEST_RCOSCMF_VDDLOCAL  (1 << DDI0_OSC_ATESTCTL_ATEST_RCOSCMF_SHIFT) /* ATEST enabled, VDD_LOCAL connected, 
+#  define DDI0_OSC_ATESTCTL_ATEST_RCOSCMF_VDDLOCAL  (1 << DDI0_OSC_ATESTCTL_ATEST_RCOSCMF_SHIFT) /* ATEST enabled, VDD_LOCAL connected,
                                                                                                   * ATEST internal to RCOSC_MF enabled
                                                                                                   * to send out 2MHz clock. */
 #  define DDI0_OSC_ATESTCTL_ATEST_RCOSCMF_BIAS      (3 << DDI0_OSC_ATESTCTL_ATEST_RCOSCMF_SHIFT) /* ATEST enabled, bias current connected,
