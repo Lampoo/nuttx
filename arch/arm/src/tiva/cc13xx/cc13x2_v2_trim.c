@@ -126,7 +126,9 @@ void cc13x2_cc26x2_trim_device(void)
 
   /* Enable standby in flash bank */
 
-  HWREGBITW(TIVA_FLASH_CFG, FLASH_CFG_DIS_STANDBY_BITN) = 0;
+  regval  = getreg32(TIVA_FLASH_CFG);
+  regval &= ~FLASH_CFG_DIS_STANDBY;
+  putreg32(regval, TIVA_FLASH_CFG)
 
   /* Select correct CACHE mode and set correct CACHE configuration */
 
@@ -144,7 +146,7 @@ void cc13x2_cc26x2_trim_device(void)
    * restarting.
    */
 
-  if (!(HWREGBITW(TIVA_AON_IOC_IOCLATCH, AON_IOC_IOCLATCH_EN_BITN)))
+  if ((getreg32(TIVA_AON_IOC_IOCLATCH) & AON_IOC_IOCLATCH_EN) == 0)
     {
       /* NB. This should be calling a ROM implementation of required trim and
        * compensation e.g.
@@ -160,11 +162,7 @@ void cc13x2_cc26x2_trim_device(void)
    * re-established.
    */
 
-  else
-    if (!
-        (HWREGBITW
-         (TIVA_AON_PMCTL_SLEEPCTL,
-          AON_PMCTL_SLEEPCTL_IO_PAD_SLEEP_DIS_BITN)))
+  else if ((getreg32(TIVA_AON_PMCTL_SLEEPCTL) & AON_PMCTL_SLEEPCTL_IO_PAD_SLEEP_DIS) == 0)
     {
       /* NB. This should be calling a ROM implementation of required trim and
        * compensation e.g. TrimAfterColdResetWakeupFromShutDown() -->
@@ -228,7 +226,7 @@ void cc13x2_cc26x2_trim_device(void)
    * but need to be sure)
    */
 
-  while (HWREGBITW(TIVA_VIMS_STAT, VIMS_STAT_MODE_CHANGING_BITN))
+  while ((getreg32(TIVA_VIMS_STAT0 & VIMS_STAT_MODE_CHANGING) != 0)
     {
       /* Do nothing - wait for an eventual ongoing mode change to complete. */
 
@@ -386,7 +384,9 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
 
   /* Disable EFUSE clock */
 
-  HWREGBITW(TIVA_FLASH_CFG, FLASH_CFG_DIS_EFUSECLK_BITN) = 1;
+  regval  = getreg32(TIVA_FLASH_CFG);
+  regval |= FLASH_CFG_DIS_EFUSECLK;
+  putreg32(regval, TIVA_FLASH_CFG)
 }
 
 /******************************************************************************

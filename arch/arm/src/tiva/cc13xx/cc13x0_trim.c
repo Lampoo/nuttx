@@ -117,7 +117,9 @@ void cc13x0_trim_device(void)
 
   /* Enable standby in flash bank */
 
-  HWREGBITW(TIVA_FLASH_CFG, FLASH_CFG_DIS_STANDBY_BITN) = 0;
+  regval  = getreg32(TIVA_FLASH_CFG);
+  regval &= ~FLASH_CFG_DIS_STANDBY;
+  putreg32(regval, TIVA_FLASH_CFG)
 
   /* Clock must always be enabled for the semaphore module (due to ADI/DDI HW
    * workaround)
@@ -132,8 +134,9 @@ void cc13x0_trim_device(void)
    * Watchdog reset, the following is set here:
    */
 
-  HWREGBITW(TIVA_PRCM_WARMRESET, PRCM_WARMRESET_WR_TO_PINRESET_BITN) =
-    1;
+  regval  = getreg32(TIVA_PRCM_WARMRESET);
+  regval |= PRCM_WARMRESET_WR_TO_PINRESET;
+  putreg32(regval, TIVA_PRCM_WARMRESET)
 
   /* Select correct CACHE mode and set correct CACHE configuration */
 
@@ -151,7 +154,7 @@ void cc13x0_trim_device(void)
    * restarting.
    */
 
-  if (!(HWREGBITW(TIVA_AON_IOC_IOCLATCH, AON_IOC_IOCLATCH_EN_BITN)))
+  if ((getreg32(TIVA_AON_IOC_IOCLATCH) & AON_IOC_IOCLATCH_EN) == 0)
     {
       /* NB. This should be calling a ROM implementation of required trim and
        * compensation e.g.
@@ -168,11 +171,7 @@ void cc13x0_trim_device(void)
    * re-established.
    */
 
-  else
-    if (!
-        (HWREGBITW
-         (TIVA_AON_SYSCTL_SLEEPCTL,
-          AON_SYSCTL_SLEEPCTL_IO_PAD_SLEEP_DIS_BITN)))
+  else if ((getreg32(TIVA_AON_SYSCTL_SLEEPCTL) & AON_SYSCTL_SLEEPCTL_IO_PAD_SLEEP_DIS) == 0)
     {
       /* NB. This should be calling a ROM implementation of required trim and
        * compensation e.g. TrimAfterColdResetWakeupFromShutDown() -->
@@ -235,7 +234,7 @@ void cc13x0_trim_device(void)
    * need to be sure)
    */
 
-  while (HWREGBITW(TIVA_VIMS_STAT, VIMS_STAT_MODE_CHANGING_BITN))
+  while ((getreg32(TIVA_VIMS_STAT) & VIMS_STAT_MODE_CHANGING) != 0)
     {
       /* Do nothing - wait for an eventual ongoing mode change to complete. */
 
@@ -286,9 +285,9 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t fcfg1_revision)
 
   /* Wait for power on on the AUX domain */
 
-  while (!
-         (HWREGBITW
-          (TIVA_AON_WUC_PWRSTAT, AON_WUC_PWRSTAT_AUX_PD_ON_BITN)));
+  while ((getreg32(TIVA_AON_WUC_PWRSTAT) & AON_WUC_PWRSTAT_AUX_PD_ON) == 0)
+    {
+    }
 
   /* Enable the clocks for AUX_DDI0_OSC and AUX_ADI4 */
 
@@ -407,7 +406,9 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t fcfg1_revision)
 
   /* Disable EFUSE clock */
 
-  HWREGBITW(TIVA_FLASH_CFG, FLASH_CFG_DIS_EFUSECLK_BITN) = 1;
+  regval  = getreg32(TIVA_FLASH_CFG);
+  regval |= FLASH_CFG_DIS_EFUSECLK;
+  putreg32(regval, TIVA_FLASH_CFG)
 }
 
 /******************************************************************************
