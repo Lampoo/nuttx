@@ -378,7 +378,7 @@ INSTALLATION
 ^^^^^^^^^^^^
 
   There are two ways to get NuttX:  You may download released, stable
-  tarballs from wither the Bitbucket or Sourceforge download locations.
+  tarballs from either the Bitbucket or Sourceforge download locations.
   Or you may get NuttX by cloning the Bitbucket GIT repositories.  Let's
   consider the released tarballs first:
 
@@ -1911,8 +1911,6 @@ nuttx/
  |   |- pic32mx7mmb/
  |   |   `- README.txt
  |   |- pic32mz-starterkit/
- |   |   `- README.txt
- |   |- pizero/
  |   |   `- README.txt
  |   |- qemu-i486/
  |   |   `- README.txt
