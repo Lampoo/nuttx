@@ -305,16 +305,17 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t fcfg1_revision)
        * write since layout is equal for both source and destination
        */
 
-      HWREGB(TIVA_ADI3_MASK4B + (ADI_3_REFSYS_DCDCCTL5_OFFSET * 2)) = (0xf0 |
-                                                                          (getreg32(TIVA_CCFG_MODE_CONF_1)
-                                                                           >>
-                                                                           CCFG_MODE_CONF_1_ALT_DCDC_IPEAK_SHIFT));
+      regval = getreg32(TIVA_CCFG_MODE_CONF_1);
+      regval = (0xf0 | (regval >> CCFG_MODE_CONF_1_ALT_DCDC_IPEAK_SHIFT));
+      putreg8((uint8_t)regval, TIVA_ADI3_MASK4B + (ADI_3_REFSYS_DCDCCTL5_OFFSET * 2));
 
     }
 
-  *Enable for JTAG
-    to be powered down(will still be powered on if debugger is connected)
-      */AONWUCJtagPowerOff();
+  /* Enable for JTAG to be powered down(will still be powered on if debugger
+   * is connected)
+   */
+
+ AONWUCJtagPowerOff();
 
   /* read the MODE_CONF register in CCFG */
 
@@ -368,6 +369,7 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t fcfg1_revision)
         {
           vtrim_bod -= 1;
         }
+
       if (vtrim_udig != 7)
         {
           if (vtrim_udig == 6)
@@ -379,9 +381,10 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t fcfg1_revision)
               vtrim_udig = ((vtrim_udig + 2) & 0xf);
             }
         }
-      HWREGB(TIVA_ADI2_SOCLDOCTL0) =
-        (vtrim_udig << ADI_2_REFSYS_SOCLDOCTL0_VTRIM_UDIG_SHIFT) |
-        (vtrim_bod << ADI_2_REFSYS_SOCLDOCTL0_VTRIM_BOD_SHIFT);
+
+      regval8 = (vtrim_udig << ADI_2_REFSYS_SOCLDOCTL0_VTRIM_UDIG_SHIFT) |
+                (vtrim_bod << ADI_2_REFSYS_SOCLDOCTL0_VTRIM_BOD_SHIFT);
+      putreg8(regval, TIVA_ADI2_SOCLDOCTL0);
     }
 
   /* Third part of trim done after cold reset and wakeup from shutdown:

@@ -301,7 +301,7 @@ static void Step_VBG(int32_t targetSigned)
 
   do
     {
-      refSysCtl3Reg = HWREGB(TIVA_ADI3_REFSYS_REFSYSCTL3);
+      refSysCtl3Reg = getreg8(TIVA_ADI3_REFSYS_REFSYSCTL3);
       currentSigned =
         (((int32_t)
           (refSysCtl3Reg <<
@@ -320,25 +320,14 @@ static void Step_VBG(int32_t targetSigned)
           else
             currentSigned--;
 
-          HWREGB(TIVA_ADI3_REFSYS_REFSYSCTL3) =
-            (refSysCtl3Reg &
-             ~(ADI_3_REFSYS_REFSYSCTL3_BOD_BG_TRIM_EN |
-               ADI_3_REFSYS_REFSYSCTL3_TRIM_VBG_MASK)) | ((((uint32_t)
-                                                         currentSigned) <<
-                                                        ADI_3_REFSYS_REFSYSCTL3_TRIM_VBG_SHIFT)
-                                                       &
-                                                       ADI_3_REFSYS_REFSYSCTL3_TRIM_VBG_MASK);
+          regval = (refSysCtl3Reg & ~(ADI_3_REFSYS_REFSYSCTL3_BOD_BG_TRIM_EN |
+                                      ADI_3_REFSYS_REFSYSCTL3_TRIM_VBG_MASK)) |
+                   ((((uint32_t)currentSigned) << ADI_3_REFSYS_REFSYSCTL3_TRIM_VBG_SHIFT) &
+                    ADI_3_REFSYS_REFSYSCTL3_TRIM_VBG_MASK);
+          putreg8((uint8_t)regval, TIVA_ADI3_REFSYS_REFSYSCTL3);
 
-          HWREGB(TIVA_ADI3_REFSYS_REFSYSCTL3) |= ADI_3_REFSYS_REFSYSCTL3_BOD_BG_TRIM_EN;      /* Bit
-                                                                                                         * set
-                                                                                                         * by
-                                                                                                         * doing
-                                                                                                         * a
-                                                                                                         * read
-                                                                                                         * modify
-                                                                                                         * write
-                                                                                                         */
-
+          regval |= ADI_3_REFSYS_REFSYSCTL3_BOD_BG_TRIM_EN;
+          putreg8((uint8_t)regval, TIVA_ADI3_REFSYS_REFSYSCTL3);
         }
     }
   while (targetSigned != currentSigned);
@@ -372,11 +361,9 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
        * write since layout is equal for both source and destination
        */
 
-      HWREGB(TIVA_ADI3_MASK4B + (ADI_3_REFSYS_DCDCCTL5_OFFSET * 2)) = (0xf0 |
-                                                                          (getreg32(TIVA_CCFG_MODE_CONF_1)
-                                                                           >>
-                                                                           CCFG_MODE_CONF_1_ALT_DCDC_IPEAK_SHIFT));
-
+      regval = getreg32(TIVA_CCFG_MODE_CONF_1);
+      regval = (0xf0 | (regval >> CCFG_MODE_CONF_1_ALT_DCDC_IPEAK_SHIFT));
+      putreg((uint8_t)regval, TIVA_ADI3_MASK4B + (ADI_3_REFSYS_DCDCCTL5_OFFSET * 2));
     }
 
   /* TBD - Temporarily removed for CC13x2 / CC26x2 */
@@ -438,13 +425,13 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
      * since all register bit fields are trimmed.
      */
 
-    HWREGB(TIVA_ADI2_DIR + ADI_2_REFSYS_SOCLDOCTL1_OFFSET) =
-      ((((ui32EfuseData & FCFG1_SHDW_OSC_BIAS_LDO_TRIM_VTRIM_COARSE_MASK) >>
-         FCFG1_SHDW_OSC_BIAS_LDO_TRIM_VTRIM_COARSE_SHIFT) <<
-        ADI_2_REFSYS_SOCLDOCTL1_VTRIM_COARSE_SHIFT) |
-       (((ui32EfuseData & FCFG1_SHDW_OSC_BIAS_LDO_TRIM_VTRIM_DIG_MASK) >>
-         FCFG1_SHDW_OSC_BIAS_LDO_TRIM_VTRIM_DIG_SHIFT) <<
-        ADI_2_REFSYS_SOCLDOCTL1_VTRIM_DIG_SHIFT));
+    regval8 = ((((ui32EfuseData & FCFG1_SHDW_OSC_BIAS_LDO_TRIM_VTRIM_COARSE_MASK) >>
+                 FCFG1_SHDW_OSC_BIAS_LDO_TRIM_VTRIM_COARSE_SHIFT) <<
+                ADI_2_REFSYS_SOCLDOCTL1_VTRIM_COARSE_SHIFT) |
+               (((ui32EfuseData & FCFG1_SHDW_OSC_BIAS_LDO_TRIM_VTRIM_DIG_MASK) >>
+                 FCFG1_SHDW_OSC_BIAS_LDO_TRIM_VTRIM_DIG_SHIFT) <<
+                ADI_2_REFSYS_SOCLDOCTL1_VTRIM_DIG_SHIFT));
+    putreg8(regval8, TIVA_ADI2_DIR + ADI_2_REFSYS_SOCLDOCTL1_OFFSET);
 
     /* Write to register CTLSOCREFSYS0 (addr offset 0) bits[4:0] (TRIMIREF) in
      * ADI_2_REFSYS. Avoid using masked write access since bit field spans
@@ -452,10 +439,10 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
      * bit field in this register.
      */
 
-    HWREGB(TIVA_ADI2_DIR + ADI_2_REFSYS_REFSYSCTL0_OFFSET) =
-      (((ui32EfuseData & FCFG1_SHDW_OSC_BIAS_LDO_TRIM_TRIMIREF_MASK) >>
-        FCFG1_SHDW_OSC_BIAS_LDO_TRIM_TRIMIREF_SHIFT) <<
-       ADI_2_REFSYS_REFSYSCTL0_TRIM_IREF_SHIFT);
+    regval8 = (((ui32EfuseData & FCFG1_SHDW_OSC_BIAS_LDO_TRIM_TRIMIREF_MASK) >>
+                FCFG1_SHDW_OSC_BIAS_LDO_TRIM_TRIMIREF_SHIFT) <<
+               ADI_2_REFSYS_REFSYSCTL0_TRIM_IREF_SHIFT);
+    putreg8(regval8, TIVA_ADI2_DIR + ADI_2_REFSYS_REFSYSCTL0_OFFSET);
 
     /* Write to register CTLSOCREFSYS2 (addr offset 4) bits[7:4] (TRIMMAG) in
      * ADI_3_REFSYS
@@ -521,25 +508,12 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
 
         /* Load the new VDDS_BOD setting */
 
-        HWREGB(TIVA_ADI3_REFSYS_REFSYSCTL3) &= ~ADI_3_REFSYS_REFSYSCTL3_BOD_BG_TRIM_EN;       /* Bit
-                                                                                                         * clear
-                                                                                                         * by
-                                                                                                         * doing
-                                                                                                         * a
-                                                                                                         * read
-                                                                                                         * modify
-                                                                                                         * write
-                                                                                                         */
+        regval8  = getreg8(TIVA_ADI3_REFSYS_REFSYSCTL3);
+        regval8 &= ~ADI_3_REFSYS_REFSYSCTL3_BOD_BG_TRIM_EN;
+        putreg8(regval8, TIVA_ADI3_REFSYS_REFSYSCTL3);
 
-        HWREGB(TIVA_ADI3_REFSYS_REFSYSCTL3) |= ADI_3_REFSYS_REFSYSCTL3_BOD_BG_TRIM_EN;        /* Bit
-                                                                                                         * set
-                                                                                                         * by
-                                                                                                         * doing
-                                                                                                         * a
-                                                                                                         * read
-                                                                                                         * modify
-                                                                                                         * write
-                                                                                                         */
+        regval8 |= ADI_3_REFSYS_REFSYSCTL3_BOD_BG_TRIM_EN;
+        putreg8(regval8, TIVA_ADI3_REFSYS_REFSYSCTL3);
 
         SetupStepVddrTrimTo((ui32EfuseData &
                              FCFG1_SHDW_ANA_TRIM_VDDR_TRIM_MASK) >>
@@ -574,19 +548,21 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
     uint32_t trimReg;
     uint32_t ui32TrimValue;
 
-        /*--- Propagate the LPM_BIAS trim --- */
+    /*--- Propagate the LPM_BIAS trim --- */
 
     trimReg = getreg32(TIVA_FCFG1_DAC_BIAS_CNF);
     ui32TrimValue = ((trimReg & FCFG1_DAC_BIAS_CNF_LPM_TRIM_IOUT_MASK) >>
                      FCFG1_DAC_BIAS_CNF_LPM_TRIM_IOUT_SHIFT);
-    HWREGB(TIVA_AUX_ADI4_LPMBIAS) =
-      ((ui32TrimValue << ADI_4_AUX_LPMBIAS_LPM_TRIM_IOUT_SHIFT) &
-       ADI_4_AUX_LPMBIAS_LPM_TRIM_IOUT_MASK);
 
-        /*--- Set fixed LPM_BIAS values --- LPM_BIAS_BACKUP_EN = 1 and LPM_BIAS_WIDTH_TRIM = 3 */
+    regval8 = ((ui32TrimValue << ADI_4_AUX_LPMBIAS_LPM_TRIM_IOUT_SHIFT) &
+               ADI_4_AUX_LPMBIAS_LPM_TRIM_IOUT_MASK);
+    putreg8(regval8, TIVA_AUX_ADI4_LPMBIAS);
 
-    HWREGB(TIVA_ADI3_SET + ADI_3_REFSYS_AUX_DEBUG_OFFSET) =
-      ADI_3_REFSYS_AUX_DEBUG_LPM_BIAS_BACKUP_EN;
+    /*--- Set fixed LPM_BIAS values --- LPM_BIAS_BACKUP_EN = 1 and LPM_BIAS_WIDTH_TRIM = 3 */
+
+    putreg8(ADI_3_REFSYS_AUX_DEBUG_LPM_BIAS_BACKUP_EN,
+           TIVA_ADI3_SET + ADI_3_REFSYS_AUX_DEBUG_OFFSET);
+
     HWREGH(TIVA_AUX_ADI4_MASK8B + (ADI_4_AUX_COMP_OFFSET * 2)) =     /* Set
                                                                          * LPM_BIAS_WIDTH_TRIM
                                                                          * = 3 */

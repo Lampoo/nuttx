@@ -184,7 +184,6 @@ void cc13x2_cc26x2_trim_device(void)
       TrimAfterColdReset();
       TrimAfterColdResetWakeupFromShutDown(ui32Fcfg1Revision);
       TrimAfterColdResetWakeupFromShutDownWakeupFromPowerDown();
-
     }
 
   /* Set VIMS power domain control. PDCTL1VIMS = 0 ==> VIMS power domain is
@@ -278,11 +277,9 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
        * write since layout is equal for both source and destination
        */
 
-      HWREGB(TIVA_ADI3_MASK4B + (ADI_3_REFSYS_DCDCCTL5_OFFSET * 2)) = (0xf0 |
-                                                                          (getreg32(TIVA_CCFG_MODE_CONF_1)
-                                                                           >>
-                                                                           CCFG_MODE_CONF_1_ALT_DCDC_IPEAK_SHIFT));
-
+      regval = getreg32(TIVA_CCFG_MODE_CONF_1);
+      regval = (0xf0 | regval >> CCFG_MODE_CONF_1_ALT_DCDC_IPEAK_SHIFT);
+      putreg8((uint8_t)regval, TIVA_ADI3_MASK4B + (ADI_3_REFSYS_DCDCCTL5_OFFSET * 2));
     }
 
   /* TBD - Temporarily removed for CC13x2 / CC26x2 */
@@ -332,21 +329,22 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
     trimReg = getreg32(TIVA_FCFG1_DAC_BIAS_CNF);
     ui32TrimValue = ((trimReg & FCFG1_DAC_BIAS_CNF_LPM_TRIM_IOUT_MASK) >>
                      FCFG1_DAC_BIAS_CNF_LPM_TRIM_IOUT_SHIFT);
-    HWREGB(TIVA_AUX_ADI4_LPMBIAS) =
-      ((ui32TrimValue << ADI_4_AUX_LPMBIAS_LPM_TRIM_IOUT_SHIFT) &
-       ADI_4_AUX_LPMBIAS_LPM_TRIM_IOUT_MASK);
+
+    regval = ((ui32TrimValue << ADI_4_AUX_LPMBIAS_LPM_TRIM_IOUT_SHIFT) &
+              ADI_4_AUX_LPMBIAS_LPM_TRIM_IOUT_MASK);
+    putreg8((uint8_t)regval, TIVA_AUX_ADI4_LPMBIAS);
 
     /* Set LPM_BIAS_BACKUP_EN according to FCFG1 configuration */
 
     if (trimReg & FCFG1_DAC_BIAS_CNF_LPM_BIAS_BACKUP_EN)
       {
-        HWREGB(TIVA_ADI3_SET + ADI_3_REFSYS_AUX_DEBUG_OFFSET) =
-          ADI_3_REFSYS_AUX_DEBUG_LPM_BIAS_BACKUP_EN;
+        putreg8(ADI_3_REFSYS_AUX_DEBUG_LPM_BIAS_BACKUP_EN,
+                TIVA_ADI3_SET + ADI_3_REFSYS_AUX_DEBUG_OFFSET);
       }
     else
       {
-        HWREGB(TIVA_ADI3_CLR + ADI_3_REFSYS_AUX_DEBUG_OFFSET) =
-          ADI_3_REFSYS_AUX_DEBUG_LPM_BIAS_BACKUP_EN;
+        putreg8(ADI_3_REFSYS_AUX_DEBUG_LPM_BIAS_BACKUP_EN,
+                TIVA_ADI3_CLR + ADI_3_REFSYS_AUX_DEBUG_OFFSET);
       }
 
     /* Set LPM_BIAS_WIDTH_TRIM according to FCFG1 configuration */
