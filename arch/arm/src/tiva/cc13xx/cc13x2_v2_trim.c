@@ -90,7 +90,7 @@
  ******************************************************************************/
 
 static void TrimAfterColdReset(void);
-static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision);
+static void TrimAfterColdResetWakeupFromShutDown(uint32_t fcfg1_revision);
 static void TrimAfterColdResetWakeupFromShutDownWakeupFromPowerDown(void);
 
 /******************************************************************************
@@ -105,17 +105,17 @@ static void TrimAfterColdResetWakeupFromShutDownWakeupFromPowerDown(void);
 
 void cc13x2_cc26x2_trim_device(void)
 {
-  uint32_t ui32Fcfg1Revision;
-  uint32_t ui32AonSysResetctl;
+  uint32_t fcfg1_revision;
+  uint32_t aon_sysresetctrl;
 
   /* Get layout revision of the factory configuration area (Handle undefined
    * revision as revision = 0)
    */
 
-  ui32Fcfg1Revision = getreg32(TIVA_FCFG1_FCFG1_REVISION);
-  if (ui32Fcfg1Revision == 0xffffffff)
+  fcfg1_revision = getreg32(TIVA_FCFG1_FCFG1_REVISION);
+  if (fcfg1_revision == 0xffffffff)
     {
-      ui32Fcfg1Revision = 0;
+      fcfg1_revision = 0;
     }
 
   /* This driverlib version and setup file is for the CC13x2, CC26x2 PG2.0 or
@@ -169,7 +169,7 @@ void cc13x2_cc26x2_trim_device(void)
        * TrimAfterColdResetWakeupFromShutDownWakeupFromPowerDown();
        */
 
-      TrimAfterColdResetWakeupFromShutDown(ui32Fcfg1Revision);
+      TrimAfterColdResetWakeupFromShutDown(fcfg1_revision);
       TrimAfterColdResetWakeupFromShutDownWakeupFromPowerDown();
     }
   else
@@ -182,7 +182,7 @@ void cc13x2_cc26x2_trim_device(void)
        */
 
       TrimAfterColdReset();
-      TrimAfterColdResetWakeupFromShutDown(ui32Fcfg1Revision);
+      TrimAfterColdResetWakeupFromShutDown(fcfg1_revision);
       TrimAfterColdResetWakeupFromShutDownWakeupFromPowerDown();
     }
 
@@ -196,9 +196,10 @@ void cc13x2_cc26x2_trim_device(void)
    * up from sleep
    */
 
-  HWREG(TIVA_FLASH_FPAC1) = (getreg32(TIVA_FLASH_FPAC1) &
-                                       ~FLASH_FPAC1_PSLEEPTDIS_MASK) |
-    (0x139 << FLASH_FPAC1_PSLEEPTDIS_SHIFT);
+  regval  = getreg32(TIVA_FLASH_FPAC1);
+  regval &= ~FLASH_FPAC1_PSLEEPTDIS_MASK;
+  regval |= (0x139 << FLASH_FPAC1_PSLEEPTDIS_SHIFT);
+  putreg32(regval, TIVA_FLASH_FPAC1);
 
   /* And finally at the end of the flash boot process: SET BOOT_DET bits in
    * AON_PMCTL to 3 if already found to be 1 Note: The BOOT_DET_x_CLR/SET bits
@@ -209,15 +210,16 @@ void cc13x2_cc26x2_trim_device(void)
         (AON_PMCTL_RESETCTL_BOOT_DET_1_MASK | AON_PMCTL_RESETCTL_BOOT_DET_0_MASK)) >>
        AON_PMCTL_RESETCTL_BOOT_DET_0_SHIFT) == 1)
     {
-      ui32AonSysResetctl = (getreg32(TIVA_AON_PMCTL_RESETCTL) &
+      aon_sysresetctrl = (getreg32(TIVA_AON_PMCTL_RESETCTL) &
                             ~(AON_PMCTL_RESETCTL_BOOT_DET_1_CLR_MASK |
                               AON_PMCTL_RESETCTL_BOOT_DET_0_CLR_MASK |
                               AON_PMCTL_RESETCTL_BOOT_DET_1_SET_MASK |
                               AON_PMCTL_RESETCTL_BOOT_DET_0_SET_MASK |
                               AON_PMCTL_RESETCTL_MCU_WARM_RESET_MASK));
-      HWREG(TIVA_AON_PMCTL_RESETCTL) =
-        ui32AonSysResetctl | AON_PMCTL_RESETCTL_BOOT_DET_1_SET_MASK;
-      HWREG(TIVA_AON_PMCTL_RESETCTL) = ui32AonSysResetctl;
+
+      putreg32(aon_sysresetctrl | AON_PMCTL_RESETCTL_BOOT_DET_1_SET_MASK,
+               TIVA_AON_PMCTL_RESETCTL);
+      putreg32(aon_sysresetctrl, TIVA_AON_PMCTL_RESETCTL);
     }
 
   /* Make sure there are no ongoing VIMS mode change when leaving
@@ -255,14 +257,14 @@ static void TrimAfterColdResetWakeupFromShutDownWakeupFromPowerDown(void)
  *   Trims to be applied when coming from SHUTDOWN (also called when
  *   coming from PIN_RESET).
  *
- * \param ui32Fcfg1Revision
+ * \param fcfg1_revision
  *
  * Returned Value:
  *   None
  *
  ******************************************************************************/
 
-static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
+static void TrimAfterColdResetWakeupFromShutDown(uint32_t fcfg1_revision)
 {
   uint32_t ccfg_ModeConfReg;
 
@@ -291,9 +293,10 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
    * OSCHfSourceSwitch().
    */
 
-  HWREG(TIVA_AUX_DDI0_OSCMASK16B + (DDI_0_OSC_CTL0_OFFSET << 1) + 4) =
-    DDI_0_OSC_CTL0_CLK_DCDC_SRC_SEL_MASK | (DDI_0_OSC_CTL0_CLK_DCDC_SRC_SEL_MASK >>
-                                         16);
+  regval = DDI_0_OSC_CTL0_CLK_DCDC_SRC_SEL_MASK |
+          (DDI_0_OSC_CTL0_CLK_DCDC_SRC_SEL_MASK >> 16);
+  putreg32(regval, TIVA_AUX_DDI0_OSCMASK16B + (DDI_0_OSC_CTL0_OFFSET << 1) + 4);
+
   /* Dummy read to ensure that the write has propagated */
 
   (void)getret16(TIVA_AUX_DDI0_OSCCTL0);
@@ -313,10 +316,10 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
    */
 
 #if ( CCFG_BASE == CCFG_BASE_DEFAULT )
-  SetupAfterColdResetWakeupFromShutDownCfg2(ui32Fcfg1Revision,
+  SetupAfterColdResetWakeupFromShutDownCfg2(fcfg1_revision,
                                             ccfg_ModeConfReg);
 #else
-  NOROM_SetupAfterColdResetWakeupFromShutDownCfg2(ui32Fcfg1Revision,
+  NOROM_SetupAfterColdResetWakeupFromShutDownCfg2(fcfg1_revision,
                                                   ccfg_ModeConfReg);
 #endif
 
