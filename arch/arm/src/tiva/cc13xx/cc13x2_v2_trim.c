@@ -296,7 +296,7 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
                                          16);
   /* Dummy read to ensure that the write has propagated */
 
-  HWREGH(TIVA_AUX_DDI0_OSCCTL0);
+  (void)getret16(TIVA_AUX_DDI0_OSCCTL0);
 
   /* read the MODE_CONF register in CCFG */
 
@@ -321,22 +321,22 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
 #endif
 
   {
-    uint32_t trimReg;
-    uint32_t ui32TrimValue;
+    uint32_t trimreg;
+    uint32_t trimvalue;
 
         /*--- Propagate the LPM_BIAS trim --- */
 
-    trimReg = getreg32(TIVA_FCFG1_DAC_BIAS_CNF);
-    ui32TrimValue = ((trimReg & FCFG1_DAC_BIAS_CNF_LPM_TRIM_IOUT_MASK) >>
+    trimreg = getreg32(TIVA_FCFG1_DAC_BIAS_CNF);
+    trimvalue = ((trimreg & FCFG1_DAC_BIAS_CNF_LPM_TRIM_IOUT_MASK) >>
                      FCFG1_DAC_BIAS_CNF_LPM_TRIM_IOUT_SHIFT);
 
-    regval = ((ui32TrimValue << ADI_4_AUX_LPMBIAS_LPM_TRIM_IOUT_SHIFT) &
+    regval = ((trimvalue << ADI_4_AUX_LPMBIAS_LPM_TRIM_IOUT_SHIFT) &
               ADI_4_AUX_LPMBIAS_LPM_TRIM_IOUT_MASK);
     putreg8((uint8_t)regval, TIVA_AUX_ADI4_LPMBIAS);
 
     /* Set LPM_BIAS_BACKUP_EN according to FCFG1 configuration */
 
-    if (trimReg & FCFG1_DAC_BIAS_CNF_LPM_BIAS_BACKUP_EN)
+    if (trimreg & FCFG1_DAC_BIAS_CNF_LPM_BIAS_BACKUP_EN)
       {
         putreg8(ADI_3_REFSYS_AUX_DEBUG_LPM_BIAS_BACKUP_EN,
                 TIVA_ADI3_SET + ADI_3_REFSYS_AUX_DEBUG_OFFSET);
@@ -351,18 +351,17 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
 
     {
       uint32_t widthTrim =
-        ((trimReg & FCFG1_DAC_BIAS_CNF_LPM_BIAS_WIDTH_TRIM_MASK) >>
+        ((trimreg & FCFG1_DAC_BIAS_CNF_LPM_BIAS_WIDTH_TRIM_MASK) >>
          FCFG1_DAC_BIAS_CNF_LPM_BIAS_WIDTH_TRIM_SHIFT);
-      HWREGH(TIVA_AUX_ADI4_MASK8B + (ADI_4_AUX_COMP_OFFSET * 2)) =   /* Set
-                                                                         * LPM_BIAS_WIDTH_TRIM
-                                                                         * = 3 */
-        ((ADI_4_AUX_COMP_LPM_BIAS_WIDTH_TRIM_MASK << 8) |  /* Set mask (bits to be
-                                                         * written) in [15:8] */
-         (widthTrim << ADI_4_AUX_COMP_LPM_BIAS_WIDTH_TRIM_SHIFT));  /* Set value
-                                                                 * (in correct
-                                                                 * bit pos) in
-                                                                 * [7:0] */
 
+      /* Set LPM_BIAS_WIDTH_TRIM = 3
+       * Set mask (bits to be written) in [15:8]
+       * Set value (in correct bit pos) in [7:0]
+       */
+
+      regval16 = ((ADI_4_AUX_COMP_LPM_BIAS_WIDTH_TRIM_MASK << 8) |
+                  (widthTrim << ADI_4_AUX_COMP_LPM_BIAS_WIDTH_TRIM_SHIFT));
+      putreg16(regval16, TIVA_AUX_ADI4_MASK8B + (ADI_4_AUX_COMP_OFFSET * 2));
     }
   }
 

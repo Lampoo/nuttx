@@ -125,7 +125,7 @@ void cc13x0_trim_device(void)
    * workaround)
    */
 
-  HWREG(TIVA_AON_WUC_MODCLKEN1) = AUX_WUC_MODCLKEN1_SMPH;
+  putreg32(AUX_WUC_MODCLKEN1_SMPH, TIVA_AON_WUC_MODCLKEN1);
 
   /* Warm resets on CC13x0 and CC26x0 complicates software design because much
    * of our software expect that initialization is done from a full system
@@ -206,9 +206,10 @@ void cc13x0_trim_device(void)
    * up from sleep
    */
 
-  HWREG(TIVA_FLASH_FPAC1) = (getreg32(TIVA_FLASH_FPAC1) &
-                                       ~FLASH_FPAC1_PSLEEPTDIS_MASK) |
-    (0x139 << FLASH_FPAC1_PSLEEPTDIS_SHIFT);
+  regval = getreg32(TIVA_FLASH_FPAC1);
+  regval &= ~FLASH_FPAC1_PSLEEPTDIS_MASK;
+  regval |= (0x139 << FLASH_FPAC1_PSLEEPTDIS_SHIFT);
+  putreg32(regval, TIVA_FLASH_FPAC1);
 
   /* And finally at the end of the flash boot process: SET BOOT_DET bits in
    * AON_SYSCTL to 3 if already found to be 1 Note: The BOOT_DET_x_CLR/SET bits
@@ -224,9 +225,10 @@ void cc13x0_trim_device(void)
                               AON_SYSCTL_RESETCTL_BOOT_DET_0_CLR_MASK |
                               AON_SYSCTL_RESETCTL_BOOT_DET_1_SET_MASK |
                               AON_SYSCTL_RESETCTL_BOOT_DET_0_SET_MASK));
-      HWREG(TIVA_AON_SYSCTL_RESETCTL) =
-        aon_sysresetctrl | AON_SYSCTL_RESETCTL_BOOT_DET_1_SET_MASK;
-      HWREG(TIVA_AON_SYSCTL_RESETCTL) = aon_sysresetctrl;
+
+      putreg32(aon_sysresetctrl | AON_SYSCTL_RESETCTL_BOOT_DET_1_SET_MASK,
+               TIVA_AON_SYSCTL_RESETCTL);
+      putreg32(aon_sysresetctrl, TIVA_AON_SYSCTL_RESETCTL);
     }
 
   /* Make sure there are no ongoing VIMS mode change when leaving
@@ -281,7 +283,7 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t fcfg1_revision)
    * reset to 0x0.
    */
 
-  HWREG(TIVA_AON_WUC_AUXCTL) = AON_WUC_AUXCTL_AUX_FORCE_ON;
+  putreg32(AON_WUC_AUXCTL_AUX_FORCE_ON, TIVA_AON_WUC_AUXCTL);
 
   /* Wait for power on on the AUX domain */
 
@@ -291,8 +293,8 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t fcfg1_revision)
 
   /* Enable the clocks for AUX_DDI0_OSC and AUX_ADI4 */
 
-  HWREG(TIVA_AON_WUC_MODCLKEN0) = AUX_WUC_MODCLKEN0_AUX_DDI0_OSC |
-    AUX_WUC_MODCLKEN0_AUX_ADI4;
+  putreg32(AUX_WUC_MODCLKEN0_AUX_DDI0_OSC | AUX_WUC_MODCLKEN0_AUX_ADI4,
+           TIVA_AON_WUC_MODCLKEN0);
 
   /* Check in CCFG for alternative DCDC setting */
 
@@ -405,7 +407,7 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t fcfg1_revision)
    * AUX_ADI4
    */
 
-  HWREG(TIVA_AON_WUC_MODCLKEN0) = AUX_WUC_MODCLKEN0_AUX_DDI0_OSC;
+  putreg32(AUX_WUC_MODCLKEN0_AUX_DDI0_OSC, TIVA_AON_WUC_MODCLKEN0);
 
   /* Disable EFUSE clock */
 
