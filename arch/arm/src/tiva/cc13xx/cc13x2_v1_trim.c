@@ -1,12 +1,14 @@
-/******************************************************************************
- *  Filename:       setup.c
- *  Revised:        2018-06-26 13:51:40 +0200 (Tue, 26 Jun 2018)
- *  Revision:       52217
+/****************************************************************************
+ * arch/arm/src/tiva/cc13xx/cc13x_start.c
  *
- *  Description:    Setup file for CC13xx/CC26xx devices.
+ *   Copyright (C) 2018 Gregory Nutt. All rights reserved.
+ *   Author: Gregory Nutt <gnutt@nuttx.org>
  *
- *  Copyright (c) 2015-2017, Texas Instruments Incorporated
- *  All rights reserved.
+ * This is a port of TI's setup.c file (revision 49363) which has a fully
+ * compatible BSD license:
+ *
+ *    Copyright (c) 2015-2017, Texas Instruments Incorporated
+ *    All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -35,6 +37,12 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  ******************************************************************************/
+
+/******************************************************************************
+ * Included Files
+ ******************************************************************************/
+
+#include <nuttx/config.h>
 
 /* Hardware headers */
 
@@ -101,9 +109,9 @@
  *
  ******************************************************************************/
 
-static void TrimAfterColdReset(void);
-static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision);
-static void TrimAfterColdResetWakeupFromShutDownWakeupFromPowerDown(void);
+static void trim_coldreset(void);
+static void trim_wakeup_fromshutdown(uint32_t ui32Fcfg1Revision);
+static void trim_wakeup_frompowerdown(void);
 
 /******************************************************************************
  *
@@ -162,10 +170,10 @@ void cc13x2_cc26x2_trim_device(void)
     {
       /* NB. This should be calling a ROM implementation of required trim and
        * compensation e.g.
-       * TrimAfterColdResetWakeupFromShutDownWakeupFromPowerDown()
+       * trim_wakeup_frompowerdown()
        */
 
-      TrimAfterColdResetWakeupFromShutDownWakeupFromPowerDown();
+      trim_wakeup_frompowerdown();
     }
 
   /* Check for shutdown When device is going to shutdown the hardware will
@@ -178,25 +186,25 @@ void cc13x2_cc26x2_trim_device(void)
   else if ((getreg32(TIVA_AON_PMCTL_SLEEPCTL) & AON_PMCTL_SLEEPCTL_IO_PAD_SLEEP_DIS) == 0)
     {
       /* NB. This should be calling a ROM implementation of required trim and
-       * compensation e.g. TrimAfterColdResetWakeupFromShutDown() -->
-       * TrimAfterColdResetWakeupFromShutDownWakeupFromPowerDown();
+       * compensation e.g. trim_wakeup_fromshutdown() -->
+       * trim_wakeup_frompowerdown();
        */
 
-      TrimAfterColdResetWakeupFromShutDown(ui32Fcfg1Revision);
-      TrimAfterColdResetWakeupFromShutDownWakeupFromPowerDown();
+      trim_wakeup_fromshutdown(ui32Fcfg1Revision);
+      trim_wakeup_frompowerdown();
     }
   else
     {
       /* Consider adding a check for soft reset to allow debugging to skip this
        * section!!! NB. This should be calling a ROM implementation of
-       * required trim and compensation e.g. TrimAfterColdReset() -->
-       * TrimAfterColdResetWakeupFromShutDown() -->
-       * TrimAfterColdResetWakeupFromShutDownWakeupFromPowerDown()
+       * required trim and compensation e.g. trim_coldreset() -->
+       * trim_wakeup_fromshutdown() -->
+       * trim_wakeup_frompowerdown()
        */
 
-      TrimAfterColdReset();
-      TrimAfterColdResetWakeupFromShutDown(ui32Fcfg1Revision);
-      TrimAfterColdResetWakeupFromShutDownWakeupFromPowerDown();
+      trim_coldreset();
+      trim_wakeup_fromshutdown(ui32Fcfg1Revision);
+      trim_wakeup_frompowerdown();
 
     }
 
@@ -259,7 +267,7 @@ void cc13x2_cc26x2_trim_device(void)
  *
  ******************************************************************************/
 
-static void TrimAfterColdResetWakeupFromShutDownWakeupFromPowerDown(void)
+static void trim_wakeup_frompowerdown(void)
 {
   /* Currently no specific trim for Powerdown */
 
@@ -352,7 +360,7 @@ static void Step_VBG(int32_t targetSigned)
  *
  ******************************************************************************/
 
-static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
+static void trim_wakeup_fromshutdown(uint32_t ui32Fcfg1Revision)
 {
   uint32_t ccfg_ModeConfReg;
 
@@ -608,7 +616,7 @@ static void TrimAfterColdResetWakeupFromShutDown(uint32_t ui32Fcfg1Revision)
  *
  ******************************************************************************/
 
-static void TrimAfterColdReset(void)
+static void trim_coldreset(void)
 {
   /* Currently no specific trim for Cold Reset */
 
