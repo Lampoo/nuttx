@@ -205,6 +205,8 @@
  *    3   DBGU_RXD  DBGU_URXD1_PD2 PD2  URXD1
  *   ---- ------------------------ -------------
  */
+#define PIO_UART1_RXD   PIO_UART1_RXD_1
+#define PIO_UART1_TXD   PIO_UART1_TXD_1
 
 /* Standard UART on Arduino connector (J21) is FLEXCOM4.
  *
