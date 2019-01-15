@@ -104,7 +104,7 @@ SECTIONS
 		_edata = ABSOLUTE(.);
 	} > sdram
 
-	.bss :
+	.bss (NOLOAD):
 	{
 		_sbss = ABSOLUTE(.);
 		*(.bss .bss.*)
