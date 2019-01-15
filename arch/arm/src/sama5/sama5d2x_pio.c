@@ -388,8 +388,34 @@ static inline int sam_configperiph(uintptr_t base, uint32_t pin,
    */
 
   regval  = sam_configcommon(cfgset);
-  periph  = ((cfgset & PIO_CFGR_FUNC_MASK) - PIO_CFGR_FUNC_PERIPHA) >> PIO_CFGR_FUNC_SHIFT;
-  regval |= PIO_CFGR_FUNC_PERIPH(periph);
+  switch (cfgset & PIO_MODE_MASK)
+    {
+      case PIO_PERIPHA:
+        periph = PIO_CFGR_FUNC_PERIPHA;
+        break;
+      case PIO_PERIPHB:
+        periph = PIO_CFGR_FUNC_PERIPHB;
+        break;
+      case PIO_PERIPHC:
+        periph = PIO_CFGR_FUNC_PERIPHC;
+        break;
+      case PIO_PERIPHD:
+        periph = PIO_CFGR_FUNC_PERIPHD;
+        break;
+      case PIO_PERIPHE:
+        periph = PIO_CFGR_FUNC_PERIPHE;
+        break;
+      case PIO_PERIPHF:
+        periph = PIO_CFGR_FUNC_PERIPHF;
+        break;
+      case PIO_PERIPHG:
+        periph = PIO_CFGR_FUNC_PERIPHG;
+        break;
+      default:
+        periph = PIO_CFGR_FUNC_GPIO;
+        break;
+    }
+  regval |= periph;
 
   /* Clear some output only bits.  Mostly this just simplifies debug. */
 
