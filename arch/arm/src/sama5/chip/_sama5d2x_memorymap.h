@@ -711,12 +711,12 @@
 
   /* Otherwise, the vectors lie at another location (perhaps in NOR FLASH, perhaps
    * elsewhere in internal SRAM).  The page table will then be positioned at
-   * the first 16Kb of ISRAM0.
+   * the last 16Kb of ISRAM0.
    */
 
-#    define PGTABLE_BASE_PADDR    SAM_ISRAM0_PADDR
+#    define PGTABLE_BASE_PADDR (SAM_ISRAM0_PADDR+SAM_ISRAM0_SIZE-PGTABLE_SIZE)
 #    ifndef CONFIG_PAGING
-#      define PGTABLE_BASE_VADDR  SAM_ISRAM0_VADDR
+#      define PGTABLE_BASE_VADDR (SAM_ISRAM0_VADDR+SAM_ISRAM0_SIZE-PGTABLE_SIZE)
 #    endif
 #    define PGTABLE_IN_LOWSRAM    1
 
