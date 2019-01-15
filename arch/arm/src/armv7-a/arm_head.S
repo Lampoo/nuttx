@@ -179,13 +179,35 @@
 	.endm
 #endif
 
+	.text
+
+/****************************************************************************
+ * Name: __printch
+ ****************************************************************************/
+#if 0 /* Output charater on UART1, enable it only for bring up purpose */
+
+	.global __printch
+	.type	__printch, #function
+__printch:
+	ldr		r12, =0xf8020014	/* UART1 Status Register */
+1:
+	ldr		r1, [r12]
+	tst		r1, #2			/* TXRDY bit */
+	beq		1b
+
+	ldr		r12, =0xf802001c	/* UART1 Transmit Holding Register */
+	str		r0, [r12]
+
+	bx		lr
+	.size		__printch, . - __printch
+#endif
+
+	.global	__start
+	.type	__start, #function
+
 /****************************************************************************
  * Name: __start
  ****************************************************************************/
-
-	.text
-	.global	__start
-	.type	__start, #function
 
 __start:
 	/* Make sure that we are in SVC mode with IRQs and FIQs disabled */
@@ -646,6 +668,8 @@ __start:
 	 */
 
 	bl		arm_boot
+
+	/* debug UART becomes available now as perpherial mapping is set in arm_boot */
 
 #ifdef CONFIG_STACK_COLORATION
 	/* Write a known value to the IDLE thread stack to support stack
